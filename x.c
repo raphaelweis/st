@@ -861,6 +861,14 @@ xloadcols(void)
 				die("could not allocate color %d\n", i);
 		}
 
+	/* set alpha value of bg color */
+	if (opt_alpha)
+		alpha = strtof(opt_alpha, NULL);
+	dc.col[defaultbg].color.alpha = (unsigned short)(0xffff * alpha);
+	dc.col[defaultbg].pixel &= 0x00FFFFFF;
+	dc.col[defaultbg].pixel |= (unsigned char)(0xff * alpha) << 24;
+	loaded = 1;
+
 	if (dc.collen) // cannot die, as the color is already loaded.
 		xloadcolor(background, NULL, &dc.col[defaultbg]);
 
@@ -1289,6 +1297,17 @@ xinit(int cols, int rows)
 	XVisualInfo vis;
 
 	xw.scr = XDefaultScreen(xw.dpy);
+
+	if (!(opt_embed && (parent = strtol(opt_embed, NULL, 0)))) {
+		parent = XRootWindow(xw.dpy, xw.scr);
+		xw.depth = 32;
+	} else {
+		XGetWindowAttributes(xw.dpy, parent, &attr);
+		xw.depth = attr.depth;
+	}
+
+	XMatchVisualInfo(xw.dpy, xw.scr, xw.depth, TrueColor, &vis);
+	xw.vis = vis.visual;
 
 	if (!(opt_embed && (parent = strtol(opt_embed, NULL, 0)))) {
 		parent = XRootWindow(xw.dpy, xw.scr);
